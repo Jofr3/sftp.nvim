@@ -1,7 +1,8 @@
 local M = {}
 
-function M.read_data(file_path)
-	local file = io.open(file_path, "r")
+function M.get_file_contents(project_path)
+  local config_path = project_path .. "/sftp.json"
+	local file = io.open(config_path, "r")
 	if file then
 		local output = file:read("*a")
 		file:close()
@@ -12,15 +13,6 @@ function M.read_data(file_path)
 		end
 	end
 	return nil
-end
-
-function M.write_data(data)
-	local file = io.open(file_path, "w")
-	if file then
-		local input = vim.json.encode(data)
-		file:write(input)
-		file:close()
-	end
 end
 
 return M
