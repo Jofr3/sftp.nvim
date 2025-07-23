@@ -4,7 +4,7 @@ local ui = require("sftp.ui")
 local M = {}
 
 function M.check_connection()
-  local result = false
+	local result = false
 
 	local stdout_data = {}
 	local stderr_data = {}
@@ -12,15 +12,15 @@ function M.check_connection()
 	local cmd = "ls"
 	local args = { "-la" }
 
-  local process
+	local process
 	process = vim.loop.spawn(cmd, {
 		args = args,
-		stdio = { nil, 1, 2, },
+		stdio = { nil, 1, 2 },
 	}, function(exit_code, signal)
 		if exit_code == 0 then
-      result = true
+			result = true
 		else
-      result = false
+			result = false
 		end
 
 		process:close()
