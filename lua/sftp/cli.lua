@@ -1,5 +1,4 @@
 local oi = require("sftp.oi")
-local ui = require("sftp.ui")
 
 local M = {}
 

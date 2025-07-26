@@ -1,5 +1,4 @@
 local oi = require("sftp.oi")
-local ui = require("sftp.ui")
 local cli = require("sftp.cli")
 
 local M = {}
@@ -29,21 +28,35 @@ local function upload_file()
 		return
 	end
 
-	local remote_file_destination = string.gsub(file_path, "^" .. project_opts.local_path .. "/?", "")
-	local remote_path = project_opts.host .. ":" .. project_opts.remote_path .. "/" .. remote_file_destination
+	local clean_path = remove_path_from_string(file_path, project_opts.local_path)
+	local fill_remote_path = project_opts.host ..  ":" .. project_opts.remote_path .. clean_path
 
-	-- print("rsync -avz " .. file_path .. " " .. remote_path)
+	-- rsync -avz ~/lsw/myclientum/test.md myclientum_dev:/dev.myclientum.com/test.md
 
-	cli.upload_file("rsync", { "-avz", file_path, remote_path }, function(success, info)
-	   print(vim.inspect(info))
-		if not success then
-			print("Error")
-		else
-			print("Success")
-		end
-	end)
+  print(fill_remote_path)
+
+	-- cli.upload_file("rsync", { "-avz", file_path, remote_path }, function(success, info)
+	-- 	print(vim.inspect(info))
+	-- 	if not success then
+	-- 		print("Error")
+	-- 	else
+	-- 		print("Success")
+	-- 	end
+	-- end)
 
 	-- error code 23 = file not found
+end
+
+function remove_path_from_string(full_path, project_path)
+	local start_pos, end_pos = string.find(full_path, project_path, 1, true)
+
+	if start_pos then
+		local before = string.sub(full_path, 1, start_pos - 1)
+		local after = string.sub(full_path, end_pos + 1)
+		return before .. after
+	else
+		return full_path
+	end
 end
 
 local function create_autocmd()
