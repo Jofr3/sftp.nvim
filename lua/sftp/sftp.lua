@@ -29,20 +29,18 @@ local function upload_file()
 	end
 
 	local clean_path = remove_path_from_string(file_path, project_opts.local_path)
-	local fill_remote_path = project_opts.host ..  ":" .. project_opts.remote_path .. clean_path
+	local remote_fill_path = project_opts.host .. ":" .. project_opts.remote_path .. clean_path
 
-	-- rsync -avz ~/lsw/myclientum/test.md myclientum_dev:/dev.myclientum.com/test.md
-
-  print(fill_remote_path)
-
-	-- cli.upload_file("rsync", { "-avz", file_path, remote_path }, function(success, info)
-	-- 	print(vim.inspect(info))
-	-- 	if not success then
-	-- 		print("Error")
-	-- 	else
-	-- 		print("Success")
-	-- 	end
-	-- end)
+	cli.upload_file( "rsync", { "-avz", file_path, remote_fill_path },
+		function(success, info)
+			print(vim.inspect(info))
+			if not success then
+				print("Error")
+			else
+				print("Success")
+			end
+		end
+	)
 
 	-- error code 23 = file not found
 end
