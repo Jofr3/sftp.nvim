@@ -23,21 +23,16 @@ local function upload_file()
 		return
 	end
 
-	local file_name = vim.fn.fnamemodify(file_path, ":t")
-	if not file_name then
-		return
-	end
-
 	local clean_path = remove_path_from_string(file_path, project_opts.local_path)
-	local remote_fill_path = project_opts.host .. ":" .. project_opts.remote_path .. clean_path
+  local local_path = project_opts.local_path .. "/." .. clean_path
+  local remote_path = project_opts.host .. ":" .. project_opts.remote_path
 
-	cli.upload_file( "rsync", { "-avz", file_path, remote_fill_path },
+	cli.upload_file( "rsync", { "-avzR", local_path, remote_path },
 		function(success, info)
-			print(vim.inspect(info))
 			if not success then
-				print("Error")
+				print("Error uploading file")
 			else
-				print("Success")
+				print("File uploaded")
 			end
 		end
 	)

@@ -42,7 +42,6 @@ function M.execute_command(command, arguments, callback)
 end
 
 function M.upload_file(command, arguments, callback)
-	print(command, vim.inspect(arguments))
 	M.execute_command(command, arguments, callback)
 end
 
