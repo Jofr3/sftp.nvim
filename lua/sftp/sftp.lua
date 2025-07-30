@@ -1,4 +1,3 @@
-local oi = require("sftp.oi")
 local cli = require("sftp.cli")
 
 local M = {}
@@ -36,8 +35,6 @@ local function upload_file()
 			end
 		end
 	)
-
-	-- error code 23 = file not found
 end
 
 function remove_path_from_string(full_path, project_path)

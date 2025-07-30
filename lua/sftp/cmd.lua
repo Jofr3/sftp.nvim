@@ -20,13 +20,6 @@ local function auto_cmds()
 			sftp.check_project()
 		end,
 	})
-
-	vim.api.nvim_create_autocmd("VimLeave", {
-		group = group,
-		callback = function()
-			sftp.close_connection()
-		end,
-	})
 end
 
 function M.setup()

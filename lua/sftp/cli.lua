@@ -1,5 +1,3 @@
-local oi = require("sftp.oi")
-
 local M = {}
 
 function M.execute_command(command, arguments, callback)
