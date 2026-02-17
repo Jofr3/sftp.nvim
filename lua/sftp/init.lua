@@ -139,6 +139,26 @@ M.test_connection = function(callback)
   require("sftp.sftp").test_connection(callback)
 end
 
+M.browse = function()
+  local sftp = require("sftp.sftp")
+  local uris, err = sftp.get_remote_browse_uris()
+  if not uris then
+    vim.notify("SFTP: " .. err, vim.log.levels.ERROR)
+    return
+  end
+
+  local oil_ok, oil = pcall(require, "oil")
+  if oil_ok and oil and type(oil.open) == "function" then
+    local ok, open_err = pcall(oil.open, uris.oil)
+    if ok then
+      return
+    end
+    vim.notify("SFTP: Oil open failed, falling back to netrw: " .. tostring(open_err), vim.log.levels.WARN)
+  end
+
+  vim.cmd("edit " .. vim.fn.fnameescape(uris.scp))
+end
+
 M.get_config = function()
   return require("sftp.config").get()
 end

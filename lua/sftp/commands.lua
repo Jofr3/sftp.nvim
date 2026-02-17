@@ -21,6 +21,26 @@ function M.setup()
     sftp.test_connection()
   end, { desc = "Test SFTP connection" })
 
+  -- Browse remote root (Oil if available, netrw fallback)
+  vim.api.nvim_create_user_command("SftpBrowse", function()
+    local uris, err = sftp.get_remote_browse_uris()
+    if not uris then
+      vim.notify("SFTP: " .. err, vim.log.levels.ERROR)
+      return
+    end
+
+    local oil_ok, oil = pcall(require, "oil")
+    if oil_ok and oil and type(oil.open) == "function" then
+      local ok, open_err = pcall(oil.open, uris.oil)
+      if ok then
+        return
+      end
+      vim.notify("SFTP: Oil open failed, falling back to netrw: " .. tostring(open_err), vim.log.levels.WARN)
+    end
+
+    vim.cmd("edit " .. vim.fn.fnameescape(uris.scp))
+  end, { desc = "Browse remote files (Oil if available)" })
+
   -- Show current config
   vim.api.nvim_create_user_command("SftpStatus", function()
     local cfg = config.get()

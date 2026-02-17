@@ -101,6 +101,7 @@ Create `.vscode/sftp.json` in your project root:
 | `:SftpUpload` | Upload current file to remote server |
 | `:SftpDownload` | Download current file from remote server |
 | `:SftpTest` | Test connection to remote server |
+| `:SftpBrowse` | Browse remote path (`remotePath`) using Oil (`oil-ssh://`, fallback: netrw `scp://`) |
 | `:SftpStatus` | Show current SFTP configuration |
 | `:SftpReload` | Reload configuration from `.vscode/sftp.json` |
 
@@ -133,6 +134,9 @@ end)
 sftp.test_connection(function(success, err)
   -- handle result
 end)
+
+-- Browse remote root (remotePath) with Oil if available
+sftp.browse()
 
 -- Get current project config
 local config = sftp.get_config()

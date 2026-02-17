@@ -290,6 +290,32 @@ function M.get_debug_cmd()
   return table.concat(cmd, " ")
 end
 
+--- Build remote browse URIs for Oil and netrw navigation.
+---@return table|nil, string|nil
+function M.get_remote_browse_uris()
+  local cfg = config.get()
+  if not cfg then
+    return nil, "No configuration found"
+  end
+
+  if not cfg.host then
+    return nil, "No host configured in .sftp.json"
+  end
+
+  local remote_path = cfg.remotePath or "/"
+  if remote_path:sub(1, 1) ~= "/" then
+    remote_path = "/" .. remote_path
+  end
+
+  local target = cfg.username and (cfg.username .. "@" .. cfg.host) or cfg.host
+  local port = cfg.port and tonumber(cfg.port) or 22
+
+  return {
+    oil = string.format("oil-ssh://%s:%d%s", target, port, remote_path),
+    scp = string.format("scp://%s:%d%s", target, port, remote_path),
+  }
+end
+
 --- Test connection to remote server
 ---@param callback function|nil
 function M.test_connection(callback)
