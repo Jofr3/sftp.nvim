@@ -15,6 +15,39 @@ local function is_executable(cmd)
   return vim.fn.executable(cmd) == 1
 end
 
+--- Normalize noisy OpenSSH stderr into a focused error message.
+---@param stderr_lines string[]
+---@return string
+local function normalize_stderr(stderr_lines)
+  local filtered = {}
+
+  for _, line in ipairs(stderr_lines or {}) do
+    local text = vim.trim(line or "")
+    if text ~= "" then
+      local is_pq_warning =
+        text:match("^%*%* WARNING: connection is not using a post%-quantum") or
+        text:match("^%*%* This session may be vulnerable") or
+        text:match("^%*%* The server may need to be upgraded") or
+        text:match("^See https://openssh%.com/pq%.html")
+
+      if not is_pq_warning then
+        table.insert(filtered, text)
+      end
+    end
+  end
+
+  if #filtered == 0 then
+    return "Unknown SFTP error"
+  end
+
+  local msg = table.concat(filtered, "\n")
+  if msg:match("Permission denied") then
+    return "Authentication failed (permission denied). Check username/password/privateKeyPath."
+  end
+
+  return msg
+end
+
 --- Build the sftp connection string
 ---@param cfg table
 ---@param batch_file string|nil Path to batch file (required for password auth)
@@ -39,6 +72,17 @@ local function build_sftp_cmd(cfg, batch_file)
   table.insert(cmd, "sftp")
   table.insert(cmd, "-P")
   table.insert(cmd, tostring(cfg.port))
+
+  -- In batch mode (-b), OpenSSH disables password prompts by default.
+  -- Re-enable them for sshpass-based auth.
+  if cfg.password then
+    table.insert(cmd, "-o")
+    table.insert(cmd, "BatchMode=no")
+    table.insert(cmd, "-o")
+    table.insert(cmd, "PreferredAuthentications=password")
+    table.insert(cmd, "-o")
+    table.insert(cmd, "PubkeyAuthentication=no")
+  end
 
   -- Auto-accept new host keys if strictHostKeyChecking is false
   if cfg.strictHostKeyChecking == false then
@@ -137,7 +181,7 @@ local function run_sftp(sftp_commands, on_success, on_error)
           on_success(stdout)
         end
       else
-        local err_msg = table.concat(stderr, "\n")
+        local err_msg = normalize_stderr(stderr)
         if on_error then
           on_error(err_msg, exit_code)
         else
