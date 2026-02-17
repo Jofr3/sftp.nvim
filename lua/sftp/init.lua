@@ -5,6 +5,8 @@ M.config = {
   upload_on_save = true,
   -- Suppress notifications (only show errors)
   silent = false,
+  -- Auto-start file watcher if SFTP project detected and connection valid
+  auto_watch = true,
 }
 
 local augroup = nil
@@ -54,6 +56,54 @@ local function setup_auto_upload()
     end,
     desc = "SFTP: Upload after external change",
   })
+
+  -- Stop watcher when exiting Neovim
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    group = augroup,
+    callback = function()
+      local watcher = require("sftp.watcher")
+      if watcher.is_running then
+        watcher.stop()
+      end
+    end,
+    desc = "SFTP: Stop watcher on exit",
+  })
+end
+
+--- Start file watcher if auto_watch enabled and connection is valid
+local function try_auto_watch()
+  local watcher = require("sftp.watcher")
+  if watcher.is_running then
+    return
+  end
+
+  local project_config = require("sftp.config").get()
+  if not project_config then
+    return
+  end
+
+  -- Defer to allow Neovim to fully initialize
+  vim.defer_fn(function()
+    require("sftp.watcher").start_if_connected()
+  end, 100)
+end
+
+--- Keep trying auto-watch when opening files later in startup/session.
+local function setup_auto_watch_retry()
+  if not augroup then
+    augroup = vim.api.nvim_create_augroup("SftpAutoUpload", { clear = true })
+  end
+
+  vim.api.nvim_create_autocmd({ "BufEnter", "DirChanged" }, {
+    group = augroup,
+    pattern = "*",
+    callback = function()
+      if M.config.auto_watch then
+        try_auto_watch()
+      end
+    end,
+    desc = "SFTP: Retry watcher auto-start",
+  })
 end
 
 --- Setup the plugin
@@ -67,6 +117,12 @@ function M.setup(opts)
   -- Setup auto-upload if enabled
   if M.config.upload_on_save then
     setup_auto_upload()
+  end
+
+  -- Auto-start watcher if enabled
+  if M.config.auto_watch then
+    try_auto_watch()
+    setup_auto_watch_retry()
   end
 end
 
@@ -85,6 +141,18 @@ end
 
 M.get_config = function()
   return require("sftp.config").get()
+end
+
+M.watch_start = function(callback)
+  require("sftp.watcher").start(callback)
+end
+
+M.watch_stop = function()
+  require("sftp.watcher").stop()
+end
+
+M.watch_status = function()
+  return require("sftp.watcher").status()
 end
 
 return M
