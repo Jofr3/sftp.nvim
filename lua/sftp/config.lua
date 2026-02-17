@@ -105,6 +105,47 @@ function M.get_remote_path(local_path)
   return remote_base .. "/" .. relative
 end
 
+--- Get the local path for a remote file path.
+---@param remote_path string
+---@return string|nil
+function M.get_local_path(remote_path)
+  local cfg = M.get()
+  if not cfg or not M.project_root then
+    return nil
+  end
+
+  local remote_base = cfg.remotePath or "/"
+  if remote_base:sub(1, 1) ~= "/" then
+    remote_base = "/" .. remote_base
+  end
+  if remote_base:sub(-1) == "/" and #remote_base > 1 then
+    remote_base = remote_base:sub(1, -2)
+  end
+
+  if remote_path:sub(1, 1) ~= "/" then
+    remote_path = "/" .. remote_path
+  end
+  if remote_path:sub(1, 2) == "//" then
+    remote_path = "/" .. remote_path:gsub("^/+", "")
+  end
+
+  local relative
+  if remote_base == "/" then
+    relative = remote_path:sub(2)
+  elseif remote_path == remote_base then
+    relative = ""
+  elseif remote_path:sub(1, #remote_base + 1) == remote_base .. "/" then
+    relative = remote_path:sub(#remote_base + 2)
+  else
+    return nil
+  end
+
+  if relative == "" then
+    return M.project_root
+  end
+  return M.project_root .. "/" .. relative
+end
+
 --- Check if a file should be ignored
 ---@param filepath string
 ---@return boolean

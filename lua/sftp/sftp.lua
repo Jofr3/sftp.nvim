@@ -275,6 +275,165 @@ function M.download(local_path, callback)
   end)
 end
 
+--- Download a specific remote file to a specific local path.
+---@param remote_path string
+---@param local_path string
+---@param callback function|nil
+function M.download_remote(remote_path, local_path, callback)
+  if not remote_path or remote_path == "" then
+    vim.notify("SFTP: Invalid remote path", vim.log.levels.ERROR)
+    return
+  end
+  if not local_path or local_path == "" then
+    vim.notify("SFTP: Invalid local path", vim.log.levels.ERROR)
+    return
+  end
+
+  local local_dir = vim.fn.fnamemodify(local_path, ":h")
+  vim.fn.mkdir(local_dir, "p")
+
+  local commands = {
+    "get " .. remote_path .. " " .. local_path,
+  }
+
+  local filename = vim.fn.fnamemodify(local_path, ":t")
+
+  run_sftp(commands, function()
+    vim.schedule(function()
+      if should_notify() then
+        vim.notify("SFTP: Downloaded " .. filename, vim.log.levels.INFO)
+      end
+      if callback then
+        callback(true)
+      end
+    end)
+  end, function(err)
+    vim.schedule(function()
+      vim.notify("SFTP: Download failed - " .. err, vim.log.levels.ERROR)
+      if callback then
+        callback(false, err)
+      end
+    end)
+  end)
+end
+
+--- Download a remote directory recursively to a local directory.
+---@param remote_dir string
+---@param local_dir string
+---@param callback function|nil
+function M.download_remote_dir(remote_dir, local_dir, callback)
+  if not remote_dir or remote_dir == "" then
+    vim.notify("SFTP: Invalid remote directory", vim.log.levels.ERROR)
+    return
+  end
+  if not local_dir or local_dir == "" then
+    vim.notify("SFTP: Invalid local directory", vim.log.levels.ERROR)
+    return
+  end
+
+  vim.fn.mkdir(local_dir, "p")
+
+  local commands = {
+    "get -r " .. remote_dir .. " " .. local_dir,
+  }
+
+  run_sftp(commands, function()
+    vim.schedule(function()
+      if should_notify() then
+        vim.notify("SFTP: Pulled directory " .. vim.fn.fnamemodify(remote_dir, ":t"), vim.log.levels.INFO)
+      end
+      if callback then
+        callback(true)
+      end
+    end)
+  end, function(err)
+    vim.schedule(function()
+      vim.notify("SFTP: Pull directory failed - " .. err, vim.log.levels.ERROR)
+      if callback then
+        callback(false, err)
+      end
+    end)
+  end)
+end
+
+--- Resolve remote target from current buffer context (Oil or remote URI).
+---@return table|nil, string|nil
+function M.get_remote_target_from_context()
+  local bufname = vim.api.nvim_buf_get_name(0)
+  local scheme, rest = bufname:match("^([%w%-]+)://(.+)$")
+  if not scheme or not rest then
+    return nil, "Current buffer is not a remote URI"
+  end
+
+  if scheme ~= "oil-ssh" and scheme ~= "scp" then
+    return nil, "Unsupported remote URI scheme: " .. scheme
+  end
+
+  local authority, remote_path = rest:match("^([^/]+)(/.*)$")
+  if not authority or not remote_path then
+    return nil, "Could not parse remote path"
+  end
+
+  -- Normalize leading slashes (Oil may emit //... for absolute paths).
+  if remote_path:sub(1, 2) == "//" then
+    remote_path = "/" .. remote_path:gsub("^/+", "")
+  end
+
+  -- Some Oil SSH providers include host as first path segment: /host/path.
+  local host = authority:gsub("^.-@", ""):gsub(":%d+$", "")
+  if host ~= "" then
+    local host_pat = host:gsub("([^%w])", "%%%1")
+    if remote_path:match("^/" .. host_pat .. "/") then
+      remote_path = remote_path:sub(#host + 2)
+      if remote_path == "" then
+        remote_path = "/"
+      end
+    elseif remote_path == "/" .. host then
+      remote_path = "/"
+    end
+  end
+
+  -- Oil directory views end with '/' and require cursor entry resolution.
+  local is_directory = remote_path:sub(-1) == "/"
+
+  if scheme == "oil-ssh" and remote_path:sub(-1) == "/" then
+    local oil_ok, oil = pcall(require, "oil")
+    if not oil_ok or not oil or type(oil.get_cursor_entry) ~= "function" then
+      return nil, "Oil entry resolution is unavailable"
+    end
+
+    local ok, entry = pcall(oil.get_cursor_entry)
+    if not ok or not entry or not entry.name then
+      return nil, "No file selected in Oil browser"
+    end
+    remote_path = remote_path .. entry.name
+    is_directory = entry.type == "directory"
+  end
+
+  local normalized = remote_path:gsub("/+$", "")
+  if normalized == "" then
+    normalized = "/"
+  end
+
+  return {
+    path = normalized,
+    is_directory = is_directory,
+  }
+end
+
+--- Resolve remote file path from current buffer context.
+---@return string|nil, string|nil
+function M.get_remote_path_from_context()
+  local target, err = M.get_remote_target_from_context()
+  if not target then
+    return nil, err
+  end
+  if target.is_directory then
+    return nil, "Selected entry is a directory"
+  end
+  return target.path
+end
+
 --- Get the command that would be run (for debugging)
 ---@return string|nil
 function M.get_debug_cmd()

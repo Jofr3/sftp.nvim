@@ -100,6 +100,7 @@ Create `.vscode/sftp.json` in your project root:
 |---------|-------------|
 | `:SftpUpload` | Upload current file to remote server |
 | `:SftpDownload` | Download current file from remote server |
+| `:SftpPull` | From Oil/remote buffer, pull selected remote file/directory to local project path |
 | `:SftpTest` | Test connection to remote server |
 | `:SftpBrowse` | Browse remote path (`remotePath`) using Oil (`oil-ssh://`, fallback: netrw `scp://`) |
 | `:SftpStatus` | Show current SFTP configuration |
@@ -129,6 +130,9 @@ sftp.download()
 sftp.download("/path/to/file.lua", function(success, err)
   -- handle result
 end)
+
+-- Pull selected remote file/directory (Oil/remote buffer) into local project
+sftp.pull()
 
 -- Test connection
 sftp.test_connection(function(success, err)

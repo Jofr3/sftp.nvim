@@ -16,6 +16,34 @@ function M.setup()
     sftp.download()
   end, { desc = "Download current file from remote server" })
 
+  -- Download selected remote file/directory from Oil/remote buffer to local project path
+  vim.api.nvim_create_user_command("SftpPull", function()
+    local target, target_err = sftp.get_remote_target_from_context()
+    if not target then
+      if target_err == "No file selected in Oil browser" then
+        vim.notify("SFTP: No file or directory selected in Oil browser", vim.log.levels.WARN)
+      elseif target_err == "Current buffer is not a remote URI" then
+        sftp.download()
+      else
+        vim.notify("SFTP: " .. target_err, vim.log.levels.WARN)
+      end
+      return
+    end
+
+    local local_path = config.get_local_path(target.path)
+    if not local_path then
+      vim.notify("SFTP: Remote path is outside configured remotePath: " .. target.path, vim.log.levels.ERROR)
+      return
+    end
+
+    if target.is_directory then
+      sftp.download_remote_dir(target.path, local_path)
+      return
+    end
+
+    sftp.download_remote(target.path, local_path)
+  end, { desc = "Pull selected remote file/directory to local project" })
+
   -- Test connection
   vim.api.nvim_create_user_command("SftpTest", function()
     sftp.test_connection()

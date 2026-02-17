@@ -135,6 +135,29 @@ M.download = function(path, callback)
   require("sftp.sftp").download(path, callback)
 end
 
+M.pull = function()
+  local sftp = require("sftp.sftp")
+  local config = require("sftp.config")
+
+  local target = sftp.get_remote_target_from_context()
+  if not target then
+    sftp.download()
+    return
+  end
+
+  local local_path = config.get_local_path(target.path)
+  if not local_path then
+    vim.notify("SFTP: Remote path is outside configured remotePath: " .. target.path, vim.log.levels.ERROR)
+    return
+  end
+
+  if target.is_directory then
+    sftp.download_remote_dir(target.path, local_path)
+  else
+    sftp.download_remote(target.path, local_path)
+  end
+end
+
 M.test_connection = function(callback)
   require("sftp.sftp").test_connection(callback)
 end
