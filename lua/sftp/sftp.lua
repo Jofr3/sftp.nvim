@@ -44,6 +44,9 @@ local function normalize_stderr(stderr_lines)
   if msg:match("Permission denied") then
     return "Authentication failed (permission denied). Check username/password/privateKeyPath."
   end
+  if msg:match("Host key verification failed") then
+    return "Host key verification failed. Set strictHostKeyChecking=false in .vscode/sftp.json to match VSCode behavior."
+  end
 
   return msg
 end
@@ -84,8 +87,19 @@ local function build_sftp_cmd(cfg, batch_file)
     table.insert(cmd, "PubkeyAuthentication=no")
   end
 
-  -- Auto-accept new host keys if strictHostKeyChecking is false
-  if cfg.strictHostKeyChecking == false then
+  -- VSCode-compatible host key behavior:
+  -- strictHostKeyChecking=false (or ignoreHost/ignorehost=true) skips host key verification.
+  local strict_host_key_checking = cfg.strictHostKeyChecking
+  if cfg.ignoreHost == true or cfg.ignorehost == true then
+    strict_host_key_checking = false
+  end
+
+  if strict_host_key_checking == false then
+    table.insert(cmd, "-o")
+    table.insert(cmd, "StrictHostKeyChecking=no")
+    table.insert(cmd, "-o")
+    table.insert(cmd, "UserKnownHostsFile=/dev/null")
+  elseif strict_host_key_checking == "accept-new" then
     table.insert(cmd, "-o")
     table.insert(cmd, "StrictHostKeyChecking=accept-new")
   end

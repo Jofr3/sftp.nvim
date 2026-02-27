@@ -73,6 +73,7 @@ Create `.vscode/sftp.json` in your project root:
   "username": "deploy",
   "remotePath": "/var/www/myproject",
   "uploadOnSave": true,
+  "strictHostKeyChecking": false,
   "privateKeyPath": "~/.ssh/id_rsa",
   "ignore": [".vscode", ".git", ".DS_Store", "node_modules"]
 }
@@ -90,9 +91,11 @@ Create `.vscode/sftp.json` in your project root:
 | `privateKeyPath` | string | `nil` | Path to SSH private key |
 | `remotePath` | string | `"/"` | Remote base directory |
 | `uploadOnSave` | boolean | `true` | Auto-upload when saving files |
+| `strictHostKeyChecking` | boolean or `"accept-new"` | `false` | Host key policy: `false` skips checks (VSCode-like), `true` enforces checks, `"accept-new"` trusts first-seen keys |
 | `ignore` | string[] | `[".vscode", ".git", ".DS_Store"]` | Patterns to ignore |
 
 > **Note:** If both `password` and `privateKeyPath` are set, password authentication takes precedence.
+> **Security:** `strictHostKeyChecking = false` disables SSH host identity verification. Set it to `true` for stricter security.
 
 ## Commands
 

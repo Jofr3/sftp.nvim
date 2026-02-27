@@ -6,7 +6,7 @@ M.config = {
   -- Suppress notifications (only show errors)
   silent = false,
   -- Auto-start file watcher if SFTP project detected and connection valid
-  auto_watch = true,
+  auto_watch = false,
 }
 
 local augroup = nil

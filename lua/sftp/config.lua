@@ -12,8 +12,9 @@ M.defaults = {
   remotePath = "/",
   uploadOnSave = true,
   ignore = { ".vscode", ".git", ".DS_Store" },
-  -- Set to false to auto-accept new host keys (less secure, convenient for dev)
-  strictHostKeyChecking = true,
+  -- Match VSCode SFTP behavior by default: skip host key checks.
+  -- Set to true to enforce OpenSSH host key verification.
+  strictHostKeyChecking = false,
 }
 
 -- Cached project config
